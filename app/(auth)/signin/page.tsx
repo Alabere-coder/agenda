@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
@@ -21,8 +21,18 @@ const InitialData: FormProps = {
 const LoginPage = () => {
   const [formDetails, setFormDetails] = useState(InitialData);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [remembering, setRemembering] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    // Load saved email if "Remember Me" was checked
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      setFormDetails((prev) => ({ ...prev, email: savedEmail }));
+      setRemembering(true);
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormDetails((prev) => ({
@@ -31,25 +41,33 @@ const LoginPage = () => {
     }));
   };
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     const { email, password } = formDetails;
 
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        const user = userCredential.user;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
 
-        router.push("/dashboard");
-      })
-      .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-      });
+      // Remember Email if checked
+      if (remembering) {
+        localStorage.setItem("rememberedEmail", email);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+      }
+
+      router.push("/dashboard");
+    } catch (error: any) {
+      setError("Invalid email or password. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen w-full flex justify-center items-center bg-neutral-300  px-4">
+    <div className="min-h-screen w-full flex justify-center items-center bg-neutral-300 px-4">
       <div className="bg-apple-white animate-scale-in animation-delay-200 max-w-md w-full glass-morphism rounded-2xl overflow-hidden px-4 py-8 space-y-6">
         <div className="space-y-2 animate-fade-up animation-delay-400">
           <h2 className="text-center text-3xl font-light text-apple-primary">
@@ -59,6 +77,9 @@ const LoginPage = () => {
             Sign in to your account
           </p>
         </div>
+
+        {error && <p className="text-red-500 text-center">{error}</p>}
+
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="relative">
             <input
@@ -69,6 +90,7 @@ const LoginPage = () => {
               id="email"
               name="email"
               type="email"
+              value={formDetails.email}
               onChange={handleChange}
             />
             <label
@@ -82,6 +104,7 @@ const LoginPage = () => {
               Email address
             </label>
           </div>
+
           <div className="relative">
             <input
               placeholder="Password"
@@ -91,6 +114,7 @@ const LoginPage = () => {
               id="password"
               name="password"
               type="password"
+              value={formDetails.password}
               onChange={handleChange}
             />
             <label
@@ -104,6 +128,7 @@ const LoginPage = () => {
               Password
             </label>
           </div>
+
           <div className="flex items-center justify-between">
             <label className="flex items-center text-sm text-apple-muted">
               <input
@@ -122,6 +147,7 @@ const LoginPage = () => {
               Forgot your password?
             </Button>
           </div>
+
           <Button
             className="w-full py-2 px-4 bg-apple-accent hover:bg-blue-600 text-white rounded-lg font-medium button-effect"
             type="submit"
@@ -130,6 +156,7 @@ const LoginPage = () => {
             {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
+
         <div className="text-center text-sm text-apple-muted animate-fade-up animation-delay-600">
           Don't have an account?
           <Link href="/signup">
@@ -142,7 +169,7 @@ const LoginPage = () => {
           </Link>
         </div>
 
-        <div className=" animate-fade-up animation-delay-600">
+        <div className="animate-fade-up animation-delay-600">
           <Link
             href="/"
             className="inline-flex items-center text-sm text-apple-muted hover:text-apple-primary transition-colors"
