@@ -42,12 +42,14 @@ const RegisterPage: React.FC = () => {
         const user = userCredential.user;
 
         console.log(user);
-
+        setLoading(!loading);
         router.push("/dashboard");
       })
       .catch((error) => {
         const errorCode = error.code;
         const errorMessage = error.message;
+        console.log(errorCode);
+        console.log(errorMessage);
       });
   };
 

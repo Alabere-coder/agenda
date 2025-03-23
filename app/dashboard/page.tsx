@@ -40,7 +40,6 @@ export interface Todo {
 const Dashboard = () => {
   const router = useRouter();
 
-  const [user, setUser] = useState<any>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);

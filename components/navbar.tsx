@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -10,9 +11,9 @@ import {
   DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
@@ -27,33 +28,40 @@ import { Menu } from "lucide-react";
 
 const NavBar = () => {
   const [isAuth, setIsAuth] = useState(false);
-  signOut;
+  const [isLoading, setIsLoading] = useState(true); // Add loading state
+  const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setIsAuth(true);
-      } else {
-        setIsAuth(false);
-      }
+      setIsAuth(!!user); // Directly set isAuth based on user presence
+      setIsLoading(false); // Set loading to false once auth state is determined
     });
 
     return () => unsubscribe();
   }, []);
 
   const signUserOut = () => {
-    signOut(auth).then(() => {
-      localStorage.clear();
-      setIsAuth(false);
-      window.location.pathname = "/signin";
-      console.log("done");
-    });
+    signOut(auth)
+      .then(() => {
+        localStorage.clear();
+        setIsAuth(false);
+        router.push("/signin"); // Use Next.js router for navigation
+      })
+      .catch((error) => {
+        console.error("Error signing out:", error);
+      });
   };
+
+  if (isLoading) {
+    return null; // Or a loading spinner
+  }
+
   return (
     <div className="h-14 pt-6 px-6 flex justify-between md:justify-around items-center">
       <p className="text-white font-bold text-2xl">Integrity-Media</p>
       {isAuth ? (
         <>
+          {/* Desktop Menu */}
           <div className="flex gap-4 max-md:hidden">
             <Link href="/dashboard">
               <Button variant="outline">Dashboard</Button>
@@ -70,9 +78,8 @@ const NavBar = () => {
                     Are you sure you want to Logout?
                   </DialogDescription>
                 </DialogHeader>
-
                 <DialogFooter>
-                  <DialogClose>
+                  <DialogClose asChild>
                     <Button>Cancel</Button>
                   </DialogClose>
                   <Button onClick={signUserOut} variant="destructive">
@@ -82,10 +89,12 @@ const NavBar = () => {
               </DialogContent>
             </Dialog>
           </div>
+
+          {/* Mobile Menu */}
           <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" aria-label="Open menu">
                   <Menu />
                 </Button>
               </SheetTrigger>
@@ -102,7 +111,7 @@ const NavBar = () => {
 
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button variant="default" className="">
+                          <Button variant="outline" className="w-full">
                             Logout
                           </Button>
                         </DialogTrigger>
@@ -113,16 +122,11 @@ const NavBar = () => {
                               Are you sure you want to Logout?
                             </DialogDescription>
                           </DialogHeader>
-
                           <DialogFooter>
                             <DialogClose asChild>
                               <Button>Cancel</Button>
                             </DialogClose>
-                            <Button
-                              onClick={signUserOut}
-                              variant="outline"
-                              className="mb-4"
-                            >
+                            <Button onClick={signUserOut} variant="destructive">
                               Logout
                             </Button>
                           </DialogFooter>
@@ -137,8 +141,9 @@ const NavBar = () => {
         </>
       ) : (
         <>
+          {/* Desktop Menu */}
           <div className="flex max-md:hidden">
-            <Link href="/signup" className="">
+            <Link href="/signup">
               <Button
                 variant="link"
                 className="text-white hover:text-blue-600 font-medium text-base"
@@ -155,10 +160,12 @@ const NavBar = () => {
               </Button>
             </Link>
           </div>
+
+          {/* Mobile Menu */}
           <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" aria-label="Open menu">
                   <Menu />
                 </Button>
               </SheetTrigger>
@@ -177,7 +184,7 @@ const NavBar = () => {
                           Login
                         </Button>
                       </Link>
-                      <Link href="/signup" className="">
+                      <Link href="/signup">
                         <Button
                           variant="link"
                           className="text-neutral-600 hover:text-blue-600 font-medium text-base"

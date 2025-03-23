@@ -59,10 +59,35 @@ const LoginPage = () => {
       }
 
       router.push("/dashboard");
-    } catch (error: any) {
-      setError("Invalid email or password. Please try again.");
+    } catch (error) {
+      // Use type guard to check if the error is a FirebaseError
+      if (error instanceof Error) {
+        switch (error.message) {
+          case "auth/user-not-found":
+            setError("User not found. Please check your email.");
+            break;
+          case "auth/wrong-password":
+            setError("Incorrect password. Please try again.");
+            break;
+          case "auth/too-many-requests":
+            setError("Too many attempts. Please try again later.");
+            break;
+          case "auth/invalid-email":
+            setError("Invalid email address. Please check your email.");
+            break;
+          case "auth/network-request-failed":
+            setError("Network error. Please check your internet connection.");
+            break;
+          default:
+            setError("An error occurred. Please try again.");
+        }
+      } else {
+        // Handle non-Firebase errors
+        setError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setLoading(false);
+      setFormDetails((prev) => ({ ...prev, password: "" })); // Clear password field
     }
   };
 
@@ -158,7 +183,7 @@ const LoginPage = () => {
         </form>
 
         <div className="text-center text-sm text-apple-muted animate-fade-up animation-delay-600">
-          Don't have an account?
+          Do not have an account yet?
           <Link href="/signup">
             <Button
               variant="link"
